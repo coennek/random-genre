@@ -59,34 +59,64 @@
 
   <script>
     let genres = [];
+    const PROXIES = [
+      url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+      url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+      url => `https://corsproxy.io/?${encodeURIComponent(url)}`
+    ];
 
-    async function fetchGenres() {
-      try {
-        const proxyUrl = 'https://corsproxy.io/?https://everynoise.com/everynoise1d.html';
-        const res = await fetch(proxyUrl);
-        const html = await res.text();
+    async function fetchHtml() {
+      const targetUrl = 'https://everynoise.com/everynoise1d.html';
+      for (const proxyGen of PROXIES) {
+        try {
+          const res = await fetch(proxyGen(targetUrl));
+          if (res.ok) {
+            const text = await res.text();
+            if (text && text.length > 5000) return text;
+          }
+        } catch (e) {
+          console.warn('Proxy failed, trying next...');
+        }
+      }
+      return null;
+    }
+
+    async function init() {
+      const html = await fetchHtml();
+      
+      if (html) {
         const doc = new DOMParser().parseFromString(html, 'text/html');
+        const rows = doc.querySelectorAll('tr, div, td');
         
-        doc.querySelectorAll('tr').forEach(row => {
-          let name = '', url = '';
+        rows.forEach(row => {
+          let name = '';
+          let url = '';
+          
           row.querySelectorAll('a').forEach(a => {
             const href = a.getAttribute('href') || '';
+            const text = a.textContent.trim();
+            
             if (href.includes('spotify.com/playlist') || href.includes('spotify:playlist')) {
               url = href;
-            } else if (!href.startsWith('javascript') && a.textContent.trim()) {
-              name = a.textContent.trim();
+            } else if (!href.startsWith('javascript') && text && text !== '>>' && text !== 'note' && text !== 'map') {
+              name = text;
             }
           });
+
           if (name) {
-            if (!url) url = `https://open.spotify.com/search/${encodeURIComponent('The Sound of ' + name)}/playlists`;
+            if (!url) {
+              url = `https://open.spotify.com/search/${encodeURIComponent('The Sound of ' + name)}/playlists`;
+            }
             genres.push({ name, url });
           }
         });
+      }
 
+      if (genres.length > 0) {
         document.getElementById('status').textContent = `Loaded ${genres.length.toLocaleString()} genres`;
         document.getElementById('btn').disabled = false;
-      } catch (err) {
-        document.getElementById('status').textContent = 'Error loading genres. Refresh to try again.';
+      } else {
+        document.getElementById('status').textContent = 'Error loading live genres. Please refresh.';
       }
     }
 
@@ -100,7 +130,7 @@
       }, 300);
     }
 
-    fetchGenres();
+    init();
   </script>
 </body>
 </html>
