@@ -80,7 +80,6 @@
       
       let deepLink = selected.url;
 
-      // Wandelt Web-URLs in native Spotify-App-Links um
       if (deepLink.includes('open.spotify.com/playlist/')) {
         const playlistId = deepLink.split('/playlist/')[1].split('?')[0];
         deepLink = `spotify:playlist:${playlistId}`;
