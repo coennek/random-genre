@@ -57,7 +57,7 @@
 
   <button id="btn" onclick="pickGenre()" disabled>🎲 Pick Random Genre</button>
 
-  <script>
+<script>
     let genres = [];
 
     async function init() {
@@ -78,8 +78,19 @@
       const selected = genres[Math.floor(Math.random() * genres.length)];
       document.getElementById('genre-name').textContent = selected.name;
       
+      let deepLink = selected.url;
+
+      // Wandelt Web-URLs in native Spotify-App-Links um
+      if (deepLink.includes('open.spotify.com/playlist/')) {
+        const playlistId = deepLink.split('/playlist/')[1].split('?')[0];
+        deepLink = `spotify:playlist:${playlistId}`;
+      } else if (deepLink.includes('open.spotify.com/search/')) {
+        const query = deepLink.split('/search/')[1].replace('/playlists', '');
+        deepLink = `spotify:search:${query}`;
+      }
+
       setTimeout(() => {
-        window.location.href = selected.url;
+        window.location.href = deepLink;
       }, 300);
     }
 
